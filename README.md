@@ -132,6 +132,59 @@ prompts = {
 
 Available variables: `{buffers}`, `{file}`, `{position}`, `{line}`, `{selection}`, `{diagnostics}`, `{diagnostics_all}`, `{quickfix}`, `{function}`, `{class}`, `{this}`
 
+## Custom Getters
+
+Add custom context items:
+
+```lua
+require("context").setup({
+  getters = {
+    -- Shorthand: just a function
+    my_getter = function(builtin)
+      return "File: " .. (builtin.file() or "none")
+    end,
+
+    -- Full form: with description and filetype filter
+    lua_module = {
+      desc = "Lua module path",
+      enabled = function() return vim.bo.filetype == "lua" end,
+      get = function(builtin)
+        local file = builtin.file()
+        if not file then return nil end
+        return file:gsub("^@", ""):gsub("%.lua$", ""):gsub("/", ".")
+      end,
+    },
+  },
+})
+```
+
+- `builtin` parameter provides access to all built-in getters for composition
+- `enabled` function controls visibility in picker (hidden when returns `false`)
+
+### Extras
+
+Pre-built language-specific getters are available in `context.extras`. Each extra includes an `enabled` function that filters by filetype:
+
+| Name | Description | Example Output |
+|------|-------------|----------------|
+| `python_path` | Python module path | `src.module.ClassName` |
+| `rust_path` | Rust module path | `crate::module::Item` |
+
+Usage:
+
+```lua
+local context = require("context")
+local extras = require("context.extras")
+
+context.setup({
+  picker = context.pickers.snacks,
+  getters = {
+    python_path = extras.python_path,
+    rust_path = extras.rust_path,
+  },
+})
+```
+
 ## Custom Picker
 
 Implement a custom picker with this signature:

@@ -33,12 +33,15 @@ function M.get_items()
 
 	-- Add context items
 	for _, ctx in ipairs(getters.items) do
-		local value = ctx.get()
-		table.insert(items, {
-			name = ctx.name,
-			desc = ctx.desc,
-			value = value,
-		})
+		local enabled = ctx.enabled
+		if enabled == nil or enabled() then
+			local value = ctx.get()
+			table.insert(items, {
+				name = ctx.name,
+				desc = ctx.desc,
+				value = value,
+			})
+		end
 	end
 
 	return items
@@ -50,8 +53,27 @@ function M.pick(on_select)
 	picker(items, on_select or config.options.on_select)
 end
 
+local function register_custom_getters(custom_getters)
+	for name, getter in pairs(custom_getters) do
+		local fn = type(getter) == "function" and getter or getter.get
+		local desc = type(getter) == "table" and getter.desc or ("Custom: " .. name)
+		local enabled = type(getter) == "table" and getter.enabled or nil
+
+		local wrapped = function()
+			return fn(getters.by_name)
+		end
+
+		getters.by_name[name] = wrapped
+		table.insert(getters.items, { name = name, desc = desc, get = wrapped, enabled = enabled })
+	end
+end
+
 function M.setup(opts)
 	config.setup(opts)
+
+	if opts and opts.getters then
+		register_custom_getters(opts.getters)
+	end
 
 	vim.api.nvim_create_user_command("Context", function()
 		M.pick()

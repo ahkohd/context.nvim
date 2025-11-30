@@ -8,6 +8,7 @@ M.defaults = {
 	end,
 	picker = nil,
 	prompts = {},
+	getters = {},
 	position_prefix = true,
 }
 
