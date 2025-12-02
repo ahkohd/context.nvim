@@ -223,3 +223,7 @@ end)
 
 <!-- Demo source: https://github.com/user-attachments/assets/cf13b3ef-5a47-4efc-a481-f83b1f3a035c -->
 https://github.com/user-attachments/assets/cf13b3ef-5a47-4efc-a481-f83b1f3a035c
+
+## Contributing
+
+PRs are welcome! If you have ideas or find bugs, [open an issue](https://github.com/ahkohd/context.nvim/issues).
