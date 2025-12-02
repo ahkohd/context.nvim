@@ -2,22 +2,29 @@
 
 local M = {}
 
+local function get_preview_text(item, max_len)
+	max_len = max_len or 60
+	if item.lazy then
+		return item.desc or ("{" .. item.name .. "}")
+	elseif type(item.value) == "string" and item.value ~= "" then
+		return item.value:gsub("\n", " "):sub(1, max_len)
+	else
+		return "{" .. item.name .. "}"
+	end
+end
+
 function M.snacks(items, on_select)
 	local picker_items = {}
 	for _, item in ipairs(items) do
-		local value = item.value
-		local preview_text
-		if type(value) == "string" and value ~= "" then
-			preview_text = value:gsub("\n", " "):sub(1, 60)
-		else
-			preview_text = "{" .. item.name .. "}"
-		end
+		local preview_text = get_preview_text(item, 60)
 
 		table.insert(picker_items, {
 			text = string.format("%-16s %s", item.name, preview_text),
 			name = item.name,
 			desc = item.desc,
 			value = item.value,
+			lazy = item.lazy,
+			get = item.get,
 		})
 	end
 
@@ -27,17 +34,19 @@ function M.snacks(items, on_select)
 		format = "text",
 		preview = function(ctx)
 			local item = ctx.item
-			local value = item and item.value
-			if value and type(value) == "string" then
-				local lines = vim.split(value, "\n", { plain = true })
-				ctx.preview:set_lines(lines)
+			if not item then
+				ctx.preview:set_lines({ "{empty}" })
+				return
+			end
+			if item.value and type(item.value) == "string" then
+				ctx.preview:set_lines(vim.split(item.value, "\n", { plain = true }))
 			else
-				ctx.preview:set_lines({ "{" .. (item and item.name or "empty") .. "}" })
+				ctx.preview:set_lines({ get_preview_text(item) })
 			end
 		end,
 		confirm = function(picker, item)
 			picker:close()
-			if item and item.value then
+			if item then
 				on_select(item)
 			end
 		end,
@@ -47,21 +56,12 @@ end
 function M.vim_ui(items, on_select)
 	local display = {}
 	for _, item in ipairs(items) do
-		local preview
-		if type(item.value) == "string" and item.value ~= "" then
-			preview = item.value:gsub("\n", " "):sub(1, 50)
-		else
-			preview = "{" .. item.name .. "}"
-		end
-		table.insert(display, string.format("%-16s %s", item.name, preview))
+		table.insert(display, string.format("%-16s %s", item.name, get_preview_text(item, 50)))
 	end
 
 	vim.ui.select(display, { prompt = "Context:" }, function(_, idx)
 		if idx then
-			local item = items[idx]
-			if item and item.value then
-				on_select(item)
-			end
+			on_select(items[idx])
 		end
 	end)
 end
@@ -72,13 +72,7 @@ function M.fzf_lua(items, on_select)
 	local lookup = {}
 
 	for _, item in ipairs(items) do
-		local preview
-		if type(item.value) == "string" and item.value ~= "" then
-			preview = item.value:gsub("\n", " "):sub(1, 50)
-		else
-			preview = "{" .. item.name .. "}"
-		end
-		local line = string.format("%-16s %s", item.name, preview)
+		local line = string.format("%-16s %s", item.name, get_preview_text(item, 50))
 		table.insert(display, line)
 		lookup[line] = item
 	end
@@ -125,15 +119,9 @@ function M.telescope(items, on_select)
 			finder = finders.new_table({
 				results = items,
 				entry_maker = function(item)
-					local preview
-					if type(item.value) == "string" and item.value ~= "" then
-						preview = item.value:gsub("\n", " "):sub(1, 50)
-					else
-						preview = "{" .. item.name .. "}"
-					end
 					return {
 						value = item,
-						display = string.format("%-16s %s", item.name, preview),
+						display = string.format("%-16s %s", item.name, get_preview_text(item, 50)),
 						ordinal = item.name,
 					}
 				end,
@@ -141,9 +129,11 @@ function M.telescope(items, on_select)
 			sorter = conf.generic_sorter({}),
 			previewer = previewers.new_buffer_previewer({
 				define_preview = function(self, entry)
-					if entry.value and entry.value.value then
-						local lines = vim.split(entry.value.value, "\n", { plain = true })
-						vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
+					local item = entry.value
+					if item.value and type(item.value) == "string" then
+						vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, vim.split(item.value, "\n", { plain = true }))
+					else
+						vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, { get_preview_text(item) })
 					end
 				end,
 			}),
@@ -151,7 +141,7 @@ function M.telescope(items, on_select)
 				actions.select_default:replace(function()
 					local selection = action_state.get_selected_entry()
 					actions.close(prompt_bufnr)
-					if selection and selection.value and selection.value.value then
+					if selection and selection.value then
 						on_select(selection.value)
 					end
 				end)

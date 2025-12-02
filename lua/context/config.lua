@@ -10,6 +10,10 @@ M.defaults = {
 	prompts = {},
 	getters = {},
 	path_prefix = "@",
+	lsp = {
+		enabled = false,
+		timeout = 1000,
+	},
 }
 
 M.options = vim.deepcopy(M.defaults)
