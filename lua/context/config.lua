@@ -9,7 +9,7 @@ M.defaults = {
 	picker = nil,
 	prompts = {},
 	getters = {},
-	position_prefix = true,
+	path_prefix = "@",
 }
 
 M.options = vim.deepcopy(M.defaults)

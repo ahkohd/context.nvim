@@ -85,8 +85,10 @@ require("context").setup({
     diagnose = "Help fix these diagnostics:\n{diagnostics}",
   },
 
-  -- Prepend @ to position output (default: true)
-  position_prefix = true,
+  -- Prefix for path output (default: "@")
+  -- path_prefix = "@",   -- "@src/file.lua"
+  -- path_prefix = nil,   -- "src/file.lua"
+  path_prefix = "@",
 })
 ```
 
@@ -94,9 +96,11 @@ require("context").setup({
 
 | Name | Description | Example Output |
 |------|-------------|----------------|
-| `buffers` | List of all open buffers | `src/main.lua`<br>`src/utils.lua` |
-| `file` | Current file path | `src/main.lua` |
-| `position` | Cursor position | `@src/main.lua:42` |
+| `buffers` | List of all open buffers | `@src/main.lua`<br>`@src/utils.lua` |
+| `file` | Current file path (relative) | `@src/main.lua` |
+| `file_absolute` | Current file path (absolute) | `/home/user/project/src/main.lua` |
+| `position` | Cursor position (relative) | `@src/main.lua:42` |
+| `position_absolute` | Cursor position (absolute) | `/home/user/project/src/main.lua:42` |
 | `line` | Current line content | `local foo = "bar"` |
 | `selection` | Visual selection text | Selected text content |
 | `diagnostics` | Diagnostics for current buffer | `[ERROR] msg @file:10-10` |
@@ -108,15 +112,9 @@ require("context").setup({
 
 ### Position Format
 
-With `position_prefix = true` (default):
 - Cursor: `@file:line`
 - Same-line selection: `@file:line:col-col`
 - Multi-line selection: `@file:start-end`
-
-With `position_prefix = false`:
-- Cursor: `file:line`
-- Same-line selection: `file:line:col-col`
-- Multi-line selection: `file:start-end`
 
 ## Template Variables
 
@@ -130,7 +128,7 @@ prompts = {
 }
 ```
 
-Available variables: `{buffers}`, `{file}`, `{position}`, `{line}`, `{selection}`, `{diagnostics}`, `{diagnostics_all}`, `{quickfix}`, `{function}`, `{class}`, `{this}`
+Available variables: `{buffers}`, `{file}`, `{file_absolute}`, `{position}`, `{position_absolute}`, `{line}`, `{selection}`, `{diagnostics}`, `{diagnostics_all}`, `{quickfix}`, `{function}`, `{class}`, `{this}`
 
 ## Custom Getters
 

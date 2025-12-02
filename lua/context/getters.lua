@@ -4,8 +4,12 @@ local config = require("context.config")
 
 local M = {}
 
+local function get_prefix()
+	return config.options.path_prefix or ""
+end
+
 function M.buffers()
-	local prefix = config.options.position_prefix and "@" or ""
+	local prefix = get_prefix()
 	local bufs = {}
 	for _, buf in ipairs(vim.api.nvim_list_bufs()) do
 		if vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].buflisted then
@@ -23,8 +27,15 @@ function M.file()
 	if file == "" then
 		return nil
 	end
-	local prefix = config.options.position_prefix and "@" or ""
-	return prefix .. file
+	return get_prefix() .. file
+end
+
+function M.file_absolute()
+	local file = vim.fn.expand("%:p")
+	if file == "" then
+		return nil
+	end
+	return file
 end
 
 local function get_selection_range()
@@ -46,13 +57,7 @@ local function get_selection_range()
 	return { start_row = start_row, start_col = start_col, end_row = end_row, end_col = end_col }
 end
 
-function M.position()
-	local file = M.file()
-	if not file then
-		return nil
-	end
-
-	local range = get_selection_range()
+local function format_position(file, range)
 	if range then
 		if range.start_row == range.end_row then
 			return string.format("%s:%d:%d-%d", file, range.start_row, range.start_col, range.end_col)
@@ -60,9 +65,24 @@ function M.position()
 			return string.format("%s:%d-%d", file, range.start_row, range.end_row)
 		end
 	end
-
 	local cursor = vim.api.nvim_win_get_cursor(0)
 	return string.format("%s:%d", file, cursor[1])
+end
+
+function M.position()
+	local file = M.file()
+	if not file then
+		return nil
+	end
+	return format_position(file, get_selection_range())
+end
+
+function M.position_absolute()
+	local file = M.file_absolute()
+	if not file then
+		return nil
+	end
+	return format_position(file, get_selection_range())
 end
 
 function M.line()
@@ -238,8 +258,10 @@ end
 
 M.items = {
 	{ name = "buffers", desc = "List of all open buffers", get = M.buffers },
-	{ name = "file", desc = "Current file path", get = M.file },
-	{ name = "position", desc = "Cursor position", get = M.position },
+	{ name = "file", desc = "Current file path (relative)", get = M.file },
+	{ name = "file_absolute", desc = "Current file path (absolute)", get = M.file_absolute },
+	{ name = "position", desc = "Cursor position (relative)", get = M.position },
+	{ name = "position_absolute", desc = "Cursor position (absolute)", get = M.position_absolute },
 	{ name = "line", desc = "Current line content", get = M.line },
 	{ name = "selection", desc = "Visual selection", get = M.selection },
 	{ name = "diagnostics", desc = "Diagnostics for current buffer", get = M.diagnostics },
@@ -253,7 +275,9 @@ M.items = {
 M.by_name = {
 	buffers = M.buffers,
 	file = M.file,
+	file_absolute = M.file_absolute,
 	position = M.position,
+	position_absolute = M.position_absolute,
 	line = M.line,
 	selection = M.selection,
 	diagnostics = M.diagnostics,
