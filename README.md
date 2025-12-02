@@ -89,6 +89,12 @@ require("context").setup({
   -- path_prefix = "@",   -- "@src/file.lua"
   -- path_prefix = nil,   -- "src/file.lua"
   path_prefix = "@",
+
+  -- LSP settings for definition getter
+  lsp = {
+    enabled = false,  -- set to true to enable LSP-based getters
+    timeout = 1000,   -- request timeout in ms
+  },
 })
 ```
 
@@ -161,12 +167,16 @@ require("context").setup({
 
 ### Extras
 
-Pre-built language-specific getters are available in `context.extras`. Each extra includes an `enabled` function that filters by filetype:
+Pre-built LSP-based getters are available in `context.extras.lsp`:
 
 | Name | Description | Example Output |
 |------|-------------|----------------|
-| `python_path` | Python module path | `src.module.ClassName` |
-| `rust_path` | Rust module path | `crate::module::Item` |
+| `lsp.definition` | Path to symbol definition via LSP | `@src/module.py:42` |
+| `lsp.references` | All references to symbol via LSP | `@src/main.py:10`<br>`@src/utils.py:25` |
+
+LSP getters are lazy-evaluated on selection to avoid blocking the picker.
+
+Requires an LSP server (e.g., pyright, rust-analyzer). Set `lsp.enabled = true` to use.
 
 Usage:
 
@@ -176,9 +186,10 @@ local extras = require("context.extras")
 
 context.setup({
   picker = context.pickers.snacks,
+  lsp = { enabled = true },
   getters = {
-    python_path = extras.python_path,
-    rust_path = extras.rust_path,
+    definition = extras.lsp.definition,
+    references = extras.lsp.references,
   },
 })
 ```
